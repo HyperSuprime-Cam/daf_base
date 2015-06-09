@@ -34,7 +34,6 @@
 
 #include "boost/noncopyable.hpp"
 
-
 namespace lsst {
 namespace daf {
 namespace base {
@@ -65,6 +64,18 @@ namespace base {
         Citizen(Citizen const &);
         ~Citizen();
 
+#ifndef SWIG                            // to avoid warnings about SWIG ignoring these
+        /// Custom memory allocation
+        void* operator new(std::size_t const size) throw(std::bad_alloc);
+        void* operator new[](std::size_t const size) throw(std::bad_alloc) {
+            return Citizen::operator new(size);
+        }
+        void operator delete(void* ptr) throw();
+        void operator delete[](void* ptr) throw() {
+            Citizen::operator delete(ptr);
+        }
+#endif
+
         Citizen & operator=(Citizen const &) { return *this; }
         //
         std::string repr() const;
@@ -88,6 +99,11 @@ namespace base {
         //
         enum { magicSentinel = 0xdeadbeef }; //!< a magic known bit pattern
         static int init();
+
+        // Accessors
+        std::size_t getMemorySize() const;
+        static std::size_t getTotalMemorySize(memId startingMemId=0);
+
     private:
         typedef std::pair<memId, pthread_t> CitizenInfo;
         typedef std::map<Citizen const*, CitizenInfo> table;
@@ -118,6 +134,9 @@ namespace base {
         bool _hasBeenCorrupted() const;
 
         friend class PersistentCitizenScope;
+
+        struct MemBlock;
+        MemBlock const* _getMemBlock() const;
     };
 
 #ifndef SWIG

@@ -215,6 +215,54 @@ int dafBase::Citizen::init() {
     return dummy;
 }
 
+
+struct dafBase::Citizen::MemBlock {
+    int const sentinel1;                // Guardian at start of block
+    std::size_t const size;             // Size of memory allocation (minus the MemBlock)
+    int const sentinel2;                // Guardian at end of MemBlock (before Citizen object)
+    int const& sentinel3() const {      // Guardian at end of block (after Citizen object)
+        return *reinterpret_cast<int const*>(reinterpret_cast<char const*>(this) + sizeof(MemBlock) + size);
+    }
+    bool hasBeenCorrupted() const {     // Detect corruption by checking sentinels
+        return (sentinel1 == Citizen::magicSentinel && sentinel2 == Citizen::magicSentinel &&
+                sentinel3() == Citizen::magicSentinel);
+    }
+};
+
+void* dafBase::Citizen::operator new(std::size_t const size) throw(std::bad_alloc)
+{
+    MemBlock *mb = reinterpret_cast<MemBlock*>(::operator new(sizeof(MemBlock) + size + sizeof(int)));
+    const_cast<int&>(mb->sentinel1) = Citizen::magicSentinel;
+    const_cast<std::size_t&>(mb->size) = size;
+    const_cast<int&>(mb->sentinel2) = Citizen::magicSentinel;
+    const_cast<int&>(mb->sentinel3()) = Citizen::magicSentinel;
+    return reinterpret_cast<void*>(mb + 1);
+}
+
+void dafBase::Citizen::operator delete(void* ptr) throw() {
+    ::operator delete(reinterpret_cast<MemBlock*>(ptr) - 1);
+}
+
+dafBase::Citizen::MemBlock const* dafBase::Citizen::_getMemBlock() const {
+    return reinterpret_cast<MemBlock const*>(this) - 1;
+}
+
+std::size_t dafBase::Citizen::getMemorySize() const {
+    return _getMemBlock()->size;
+}
+
+std::size_t dafBase::Citizen::getTotalMemorySize(memId startingMemId) {
+    typedef std::vector<Citizen const*> CitizenList;
+    boost::scoped_ptr<CitizenList const> citizens(Citizen::census());
+    std::size_t sum = 0;
+    for (CitizenList::const_iterator i = citizens->begin(); i != citizens->end(); ++i) {
+        if ((*i)->getId() > startingMemId) {
+            sum += (*i)->getMemorySize();
+        }
+    }
+    return sum;
+}
+
 /******************************************************************************/
 //
 // Return (some) private state
@@ -341,6 +389,9 @@ std::vector<dafBase::Citizen const*> const* dafBase::Citizen::census() {
 //! only after calling the corruptionCallback
 bool dafBase::Citizen::_hasBeenCorrupted() const {
     if (_sentinel == static_cast<int>(magicSentinel)) {
+        return false;
+    }
+    if (!_getMemBlock()->hasBeenCorrupted()) {
         return false;
     }
 
