@@ -205,11 +205,6 @@ dafBase::Citizen::~Citizen() {
     }
 }
 
-//! Called once when the memory system is being initialised
-//
-// The main purpose of this routine is as a place to set
-// breakpoints to setup memory debugging; see discussion on trac
-//
 int dafBase::Citizen::init() {
     volatile int dummy = 1;
     return dummy;

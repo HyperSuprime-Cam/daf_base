@@ -61,42 +61,89 @@ namespace base {
         typedef memId (*memNewCallback)(const memId cid);
         typedef memId (*memCallback)(const Citizen *ptr);
 
-        Citizen(const std::type_info &);
+        /// Constructor
+        ///
+        /// We require the type name, that is usually provided by calling
+        /// 'typeid(this)'.
+        Citizen(const std::type_info &type);
+
         Citizen(Citizen const &);
         ~Citizen();
-
         Citizen & operator=(Citizen const &) { return *this; }
-        //
+
         std::string repr() const;
+
+        /// Mark a Citizen as persistent
+        ///
+        /// Persistent Citizens are not included in a census or count.
         void markPersistent(void);
 
+        /// Return the number of active Citizens
+        ///
+        /// Active Citizens with ID less than startingMemId are not included.
+        /// Citizens marked as persistent are not included.
         static std::size_t countCitizens(memId startingMemId=0);
+
+        /// Deprecated function to return the number of active Citizens
+        ///
+        /// @deprecated Use countCitizens instead, which doesn't require
+        ///   the dummy 'int' argument for overloading.
         static std::size_t census(int, memId startingMemId=0) { return countCitizens(startingMemId); }
+
+        /// Print a summary of active Citizens
+        ///
+        /// Active Citizens with ID less than startingMemId are not included.
+        /// Citizens marked as persistent are not included.
+        ///
+        /// @param stream  Stream to which to print
+        /// @param startingMemId  Ignore Citizens with ID less than this
         static void census(std::ostream &stream, memId startingMemId = 0);
 
+        /// Return a list of active Citizens
+        ///
+        /// The list is sorted by ID.  Citizens with ID less than startingMemId
+        /// are not included.
+        /// Citizens marked as persistent are not included.
         static std::vector<Citizen const*> const census(memId startingMemId=0);
 
+        /// Return whether any Citizens have been corrupted
+        ///
+        /// The check for corruption is not exhaustive, but should catch basic
+        /// underrun and overrun.
         static bool hasBeenCorrupted();
         
+        /// Return the Citizen ID
         memId getId() const;
         
+        /// Return the next Citizen ID that will be used
         static memId getNextMemId();
 
+        //{
+        /// Set the ID for the next callback
         static memId setNewCallbackId(memId id);
         static memId setDeleteCallbackId(memId id);
+        //}
+        //{
+        /// Set a callback
         static memNewCallback setNewCallback(memNewCallback func);
         static memCallback setDeleteCallback(memCallback func);
         static memCallback setCorruptionCallback(memCallback func);
-        //
+        //}
         enum { magicSentinel = 0xdeadbeef }; //!< a magic known bit pattern
+
+        /// Initialise the Citizen system
+        ///
+        /// This is called once when the memory system is being initialised
+        /// This allows this routine to be used as a place to set
+        /// breakpoints to setup memory debugging
         static int init();
     private:
         typedef std::pair<memId, pthread_t> CitizenInfo;
         typedef std::map<Citizen const*, CitizenInfo> table;
 
-        int _sentinel;                  // Initialised to _magicSentinel to detect overwritten memory
-        memId _CitizenId;               // unique identifier for this pointer
-        const char *_typeName;          // typeid()->name
+        int _sentinel;                  //< Initialised to _magicSentinel to detect overwritten memory
+        memId _CitizenId;               //< unique identifier for this pointer
+        const char *_typeName;          //< typeid()->name
 
         static memId _addCitizen(Citizen const* c);
         static memId _nextMemIdAndIncrement(void);
