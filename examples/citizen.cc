@@ -107,11 +107,10 @@ int main() {
     
     MyClass *mine = ::foo();
 
-    std::cout << boost::format("In main (%d objects)\n") % Citizen::census(0);
+    std::cout << boost::format("In main (%d objects)\n") % Citizen::countCitizens();
 
-    boost::scoped_ptr<std::vector<Citizen const*> const> leaks(Citizen::census());
-    for (std::vector<Citizen const*>::const_iterator cur = leaks->begin();
-         cur != leaks->end(); cur++) {
+    std::vector<Citizen const*> const leaks = Citizen::census();
+    for (std::vector<Citizen const*>::const_iterator cur = leaks.begin(); cur != leaks.end(); cur++) {
         std::cerr << boost::format("    %s\n") % (*cur)->repr();
     }
 
@@ -130,7 +129,7 @@ int main() {
 
     y.reset();
 
-    std::cout << boost::format("In main (%d objects)\n") % Citizen::census(0, firstId);
+    std::cout << boost::format("In main (%d objects)\n") % Citizen::countCitizens(firstId);
     Citizen::census(std::cout, firstId);
     
     return 0;

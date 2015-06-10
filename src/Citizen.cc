@@ -263,8 +263,7 @@ void dafBase::Citizen::markPersistent(void) {
 //
 //! How many active Citizens are there?
 //
-int dafBase::Citizen::census(
-    int,                                //<! the int argument allows overloading
+std::size_t dafBase::Citizen::countCitizens(
     memId startingMemId                 //!< Don't print Citizens with lower IDs
     ) {
     if (startingMemId == 0) {              // easy
@@ -292,13 +291,11 @@ void dafBase::Citizen::census(
     ) {
     ReadGuard guard(citizenLock);
 
-    boost::scoped_ptr<std::vector<Citizen const*> const> leaks(Citizen::census());
+    std::vector<Citizen const*> const leaks = Citizen::census(startingMemId);
 
-    for (std::vector<Citizen const *>::const_iterator citizen = leaks->begin(), end = leaks->end();
+    for (std::vector<Citizen const *>::const_iterator citizen = leaks.begin(), end = leaks.end();
          citizen != end; ++citizen) {
-        if ((*citizen)->getId() >= startingMemId) {
-            stream << (*citizen)->repr() << "\n";
-        }
+        stream << (*citizen)->repr() << "\n";
     }
 }
 
@@ -310,26 +307,19 @@ bool cmpId(dafBase::Citizen const *a, dafBase::Citizen const *b)
 }
 } 
 
-//
-//! Return a (newly allocated) std::vector of active Citizens sorted by ID
-//
-//! You are responsible for deleting it; or you can say
-//!    boost::scoped_ptr<std::vector<Citizen const*> const>
-//!        leaks(Citizen::census());
-//! and not bother (that becomes std::unique_ptr in C++11)
-//
-std::vector<dafBase::Citizen const*> const* dafBase::Citizen::census() {
-    std::vector<Citizen const*>* vec =
-        new std::vector<Citizen const*>(0);
+std::vector<dafBase::Citizen const*> const dafBase::Citizen::census(memId startingMemId) {
+    std::vector<Citizen const*> vec;
     ReadGuard guard(citizenLock);
-    vec->reserve(_activeCitizens.size());
+    vec.reserve(_activeCitizens.size());
 
-    for (table::iterator cur = _activeCitizens.begin();
-         cur != _activeCitizens.end(); cur++) {
-        vec->push_back(dynamic_cast<Citizen const*>(cur->first));
+    for (table::const_iterator cur = _activeCitizens.begin(); cur != _activeCitizens.end(); cur++) {
+        Citizen const* citizen = cur->first;
+        if (citizen->getId() >= startingMemId) {
+            vec.push_back(citizen);
+        }
     }
-        
-    std::sort(vec->begin(), vec->end(), cmpId);
+    vec.reserve(vec.size());
+    std::sort(vec.begin(), vec.end(), cmpId);
 
     return vec;
 }

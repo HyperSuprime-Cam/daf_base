@@ -66,7 +66,7 @@ MyClass *foo() {
     boost::scoped_ptr<Shoe> x(new Shoe(1));
     MyClass *my_instance = new MyClass();
 
-    BOOST_CHECK_EQUAL(Citizen::census(0), 5);
+    BOOST_CHECK_EQUAL(Citizen::countCitizens(), 5);
 
     return my_instance;
 }
@@ -83,13 +83,13 @@ BOOST_AUTO_TEST_CASE(all) {
     
     MyClass *mine = foo();
 
-    boost::scoped_ptr<const std::vector<const Citizen *> > leaks(Citizen::census());
-    BOOST_CHECK_EQUAL(leaks->end() - leaks->begin(), 4);
-    BOOST_CHECK_EQUAL(Citizen::census(0), 4);
-    BOOST_CHECK_EQUAL(Citizen::census(0, firstId), 3);
+    std::vector<const Citizen *> const leaks = Citizen::census();
+    BOOST_CHECK_EQUAL(leaks.end() - leaks.begin(), 4);
+    BOOST_CHECK_EQUAL(Citizen::countCitizens(), 4);
+    BOOST_CHECK_EQUAL(Citizen::countCitizens(firstId), 3);
 
     x.markPersistent();                 // x isn't going to be deleted until main exists, so don't list as a leak
-    BOOST_CHECK_EQUAL(Citizen::census(0, firstId), 3);
+    BOOST_CHECK_EQUAL(Citizen::countCitizens(firstId), 3);
 
     z.reset();                          // i.e. delete pointed-to object
     delete mine;
@@ -102,7 +102,7 @@ BOOST_AUTO_TEST_CASE(all) {
 
     y.reset();
     Citizen::census(std::cout, firstId);
-    BOOST_CHECK_EQUAL(Citizen::census(0, firstId), 0);
+    BOOST_CHECK_EQUAL(Citizen::countCitizens(firstId), 0);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

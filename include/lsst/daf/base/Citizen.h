@@ -70,9 +70,11 @@ namespace base {
         std::string repr() const;
         void markPersistent(void);
 
-        static int census(int, memId startingMemId = 0);
+        static std::size_t countCitizens(memId startingMemId=0);
+        static std::size_t census(int, memId startingMemId=0) { return countCitizens(startingMemId); }
         static void census(std::ostream &stream, memId startingMemId = 0);
-        static const std::vector<const Citizen *> *census();
+
+        static std::vector<Citizen const*> const census(memId startingMemId=0);
 
         static bool hasBeenCorrupted();
         
