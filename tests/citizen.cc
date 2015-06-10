@@ -33,6 +33,9 @@ class Shoe : public lsst::daf::base::Citizen {
 public:
     Shoe(int i = 0) : Citizen(typeid(this)), _i(i) { }
     ~Shoe() { }
+
+    void addMemory(std::size_t size) { addMemoryUse(size); }
+    void subtractMemory(std::size_t size) { subtractMemoryUse(size); }
 private:
     int _i;
 };
@@ -80,6 +83,9 @@ BOOST_AUTO_TEST_CASE(all) {
     
     boost::scoped_ptr<Shoe> y(new Shoe);
     boost::scoped_ptr<Shoe> z(new Shoe(10));
+
+    y->addMemory(1);
+    z->addMemory(2);
     
     MyClass *mine = foo();
 
@@ -87,6 +93,10 @@ BOOST_AUTO_TEST_CASE(all) {
     BOOST_CHECK_EQUAL(leaks.end() - leaks.begin(), 4);
     BOOST_CHECK_EQUAL(Citizen::countCitizens(), 4);
     BOOST_CHECK_EQUAL(Citizen::countCitizens(firstId), 3);
+
+    BOOST_CHECK_EQUAL(Citizen::getTotalMemoryUse(firstId), 3);
+    z->subtractMemory(1);
+    BOOST_CHECK_EQUAL(Citizen::getTotalMemoryUse(firstId), 2);
 
     x.markPersistent();                 // x isn't going to be deleted until main exists, so don't list as a leak
     BOOST_CHECK_EQUAL(Citizen::countCitizens(firstId), 3);

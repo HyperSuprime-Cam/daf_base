@@ -30,6 +30,7 @@
 #include <pthread.h>
 #include <string>
 #include <vector>
+#include <cassert>
 #include <typeinfo>
 
 #include "boost/noncopyable.hpp"
@@ -137,6 +138,34 @@ namespace base {
         /// This allows this routine to be used as a place to set
         /// breakpoints to setup memory debugging
         static int init();
+
+        /// Return the memory size used by the Citizen
+        ///
+        /// This only includes memory that the Citizen has declared.
+        std::size_t getMemoryUse() const { return _memoryUse; }
+
+        /// Return the total memory size used by Citizens
+        ///
+        /// Citizens with ID before startingMemId are not included.
+        /// Citizens marked as persistent are not included.
+        ///
+        /// This only includes memory that the Citizens have declared.
+        static std::size_t getTotalMemoryUse(memId startingMemId=0);
+
+
+    protected:
+
+        //{
+        /// Declare memory use by a Citizen
+        ///
+        /// This allows Citizens to track memory usage that isn't in the
+        /// citizen itself, e.g., pixels being held by an Image.
+        void setMemoryUse(std::size_t const bytes) { _memoryUse = bytes; }
+        void addMemoryUse(std::size_t const bytes) { _memoryUse += bytes; }
+        void subtractMemoryUse(std::size_t const bytes) { assert(_memoryUse >= bytes); _memoryUse -= bytes; }
+        void swapMemoryUse(Citizen& other) { std::swap(_memoryUse, other._memoryUse); }
+        //}
+
     private:
         typedef std::pair<memId, pthread_t> CitizenInfo;
         typedef std::map<Citizen const*, CitizenInfo> table;
@@ -144,6 +173,7 @@ namespace base {
         int _sentinel;                  //< Initialised to _magicSentinel to detect overwritten memory
         memId _CitizenId;               //< unique identifier for this pointer
         const char *_typeName;          //< typeid()->name
+        std::size_t _memoryUse;         //< Size of registered memory
 
         static memId _addCitizen(Citizen const* c);
         static memId _nextMemIdAndIncrement(void);

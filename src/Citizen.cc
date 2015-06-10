@@ -173,13 +173,15 @@ dafBase::Citizen::memId dafBase::Citizen::_addCitizen(Citizen const* c) {
 dafBase::Citizen::Citizen(std::type_info const& type) :
     _sentinel(magicSentinel),
     _CitizenId(_addCitizen(this)),
-    _typeName(type.name()) {
+    _typeName(type.name()),
+    _memoryUse(0) {
 }
 
 dafBase::Citizen::Citizen(Citizen const& citizen) :
     _sentinel(magicSentinel),
     _CitizenId(_addCitizen(this)),
-    _typeName(citizen._typeName) {
+    _typeName(citizen._typeName),
+    _memoryUse(citizen._memoryUse) {
 }
 
 dafBase::Citizen::~Citizen() {
@@ -209,6 +211,16 @@ int dafBase::Citizen::init() {
     volatile int dummy = 1;
     return dummy;
 }
+
+std::size_t dafBase::Citizen::getTotalMemoryUse(memId startingMemId) {
+    std::vector<Citizen const*> const population = census(startingMemId);
+    std::size_t sum = 0;
+    for (std::vector<Citizen const*>::const_iterator i = population.begin(); i != population.end(); ++i) {
+        sum += (*i)->getMemoryUse();
+    }
+    return sum;
+}
+
 
 /******************************************************************************/
 //
