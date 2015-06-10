@@ -231,6 +231,10 @@ dafBase::Citizen::memId dafBase::Citizen::getId() const {
     return _CitizenId;
 }
 
+char const* dafBase::Citizen::getTypeName() const {
+    return _typeName;
+}
+
 //! Return the memId of the next object to be allocated
 dafBase::Citizen::memId dafBase::Citizen::getNextMemId() {
     return _nextMemId();
@@ -469,6 +473,65 @@ dafBase::Citizen::memId defaultCorruptionCallback(dafBase::Citizen const* ptr //
 
 bool& dafBase::Citizen::_shouldPersistCitizens(void) {
     return perThreadPersistFlag.getRef();
+}
+
+
+namespace {
+
+std::size_t memoryUseFunctor(dafBase::Citizen const& citizen) { return citizen.getMemoryUse(); }
+std::size_t numberFunctor(dafBase::Citizen const& citizen) { return 1; }
+
+std::map<std::string, std::size_t> getStatisticsByType(
+    dafBase::Citizen::memId startingMemId,
+    std::set<std::string> types,
+    std::size_t (*func)(dafBase::Citizen const&)
+    )
+{
+    std::map<std::string, std::size_t> sums;
+    std::vector<dafBase::Citizen const*> const population = dafBase::Citizen::census(startingMemId);
+    for (std::vector<dafBase::Citizen const*>::const_iterator i = population.begin(); i != population.end();
+         ++i) {
+        dafBase::Citizen const& citizen = **i;
+        std::string const t(citizen.getTypeName());
+        if (types.size() > 0 && types.find(t) == types.end()) {
+            continue;
+        }
+        std::size_t const num = func(citizen);
+        if (sums.find(t) == sums.end()) {
+            sums[t] = num;
+        } else {
+            sums[t] += num;
+        }
+    }
+    return sums;
+}
+
+} // anonymous namespace
+
+std::map<std::string, std::size_t> dafBase::Citizen::getMemoryUseByType(
+    Citizen::memId startingMemId,
+    std::set<std::string> types
+    )
+{
+    return getStatisticsByType(startingMemId, types, &memoryUseFunctor);
+}
+
+std::map<std::string, std::size_t> dafBase::Citizen::getNumberByType(
+    Citizen::memId startingMemId,
+    std::set<std::string> types
+    )
+{
+    return getStatisticsByType(startingMemId, types, &numberFunctor);
+}
+
+std::ostream& operator<<(std::ostream& os, std::map<std::string, std::size_t> const& map)
+{
+    os << "{";
+    for (std::map<std::string, std::size_t>::const_iterator i = map.begin(); i != map.end(); ++i) {
+        os << "\"" << i->first << "\": " << i->second << ", ";
+    }
+    os << "}";
+    return os;
 }
 
 //@}

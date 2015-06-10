@@ -39,6 +39,7 @@ Access to the classes from the daf_base library
 #include "lsst/daf/base/PropertyList.h"
 %}
 
+%include std_map.i
 %include "lsst/p_lsstSwig.i"
 
 %lsst_exceptions()
@@ -104,7 +105,27 @@ VectorAddType(lsst::daf::base::DateTime, DateTime)
     %}
 }
 
+// No idea why these fragments are required, except that they're necessary
+// to prevent:
+//     Warning 490: Fragment 'SWIG_AsVal_std_size_t' not found.
+//     Warning 490: Fragment 'SWIG_From_std_size_t' not found.
+// with the following consequences:
+//     error: use of undeclared identifier 'SWIG_AsVal_std_size_t'; did you mean 'SWIG_AsVal_size_t'?
+//     error: use of undeclared identifier 'SWIG_From_std_size_t'; did you mean 'SWIG_From_size_t'?
+%fragment("SWIG_AsVal_std_size_t", "header") {
+    SWIGINTERN int SWIG_AsVal_std_size_t(PyObject* p, std::size_t* s) {
+        return SWIG_OK;
+    }
+}
+%fragment("SWIG_From_std_size_t", "header") {
+    SWIGINTERNINLINE PyObject* SWIG_From_std_size_t(std::size_t s) {
+        return SWIG_Py_Void();
+    }
+}
+
 %template(vectorCitizen) std::vector<lsst::daf::base::Citizen const *>;
+%template(CitizenCounts) std::map<std::string, std::size_t>;
+%addStreamRepr(std::map<std::string, std::size_t>);
 
 // This has to come after PropertySet.h
 %define PropertySetAddType(type, typeName)

@@ -26,6 +26,7 @@
 #define LSST_DAF_BASE_CITIZEN_H
 
 #include <map>
+#include <set>
 #include <ostream>
 #include <pthread.h>
 #include <string>
@@ -115,6 +116,9 @@ namespace base {
         
         /// Return the Citizen ID
         memId getId() const;
+
+        /// Return the type name
+        char const* getTypeName() const;
         
         /// Return the next Citizen ID that will be used
         static memId getNextMemId();
@@ -152,6 +156,31 @@ namespace base {
         /// This only includes memory that the Citizens have declared.
         static std::size_t getTotalMemoryUse(memId startingMemId=0);
 
+        /// Return the total memory used by active Citizens grouped by type
+        ///
+        /// Citizens with ID before startingMemId are not included.
+        /// Citizens marked as persistent are not included.
+        ///
+        /// This only includes memory that the Citizens have declared.
+        ///
+        /// @param startingMemId  Ignore Citizens with ID less than this
+        /// @param types  Set of types to consider; empty for all
+        static std::map<std::string, std::size_t> getMemoryUseByType(
+            Citizen::memId startingMemId=0,
+            std::set<std::string> types=std::set<std::string>()
+            );
+
+        /// Return the number of active Citizens grouped by type
+        ///
+        /// Citizens with ID before startingMemId are not included.
+        /// Citizens marked as persistent are not included.
+        ///
+        /// @param startingMemId  Ignore Citizens with ID less than this
+        /// @param types  Set of types to consider; empty for all
+        static std::map<std::string, std::size_t> getNumberByType(
+            Citizen::memId startingMemId=0,
+            std::set<std::string> types=std::set<std::string>()
+            );
 
     protected:
 
@@ -216,5 +245,7 @@ namespace base {
 #endif
 
 }}} // namespace lsst::daf::base
+
+std::ostream& operator<<(std::ostream& os, std::map<std::string, std::size_t> const& map);
 
 #endif

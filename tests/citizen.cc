@@ -98,6 +98,16 @@ BOOST_AUTO_TEST_CASE(all) {
     z->subtractMemory(1);
     BOOST_CHECK_EQUAL(Citizen::getTotalMemoryUse(firstId), 2);
 
+    std::map<std::string, std::size_t> numbers = Citizen::getNumberByType(firstId);
+    BOOST_CHECK_EQUAL(numbers.size(), 2);
+    BOOST_CHECK_EQUAL(numbers[std::string(typeid(Shoe*).name())], 2);
+    BOOST_CHECK_EQUAL(numbers[std::string(typeid(MyClass*).name())], 1);
+
+    std::map<std::string, std::size_t> uses = Citizen::getMemoryUseByType(firstId);
+    BOOST_CHECK_EQUAL(uses.size(), 2);
+    BOOST_CHECK_EQUAL(uses[std::string(typeid(Shoe*).name())], 2);
+    BOOST_CHECK_EQUAL(uses[std::string(typeid(MyClass*).name())], 0);
+
     x.markPersistent();                 // x isn't going to be deleted until main exists, so don't list as a leak
     BOOST_CHECK_EQUAL(Citizen::countCitizens(firstId), 3);
 
